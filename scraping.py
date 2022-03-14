@@ -3,11 +3,13 @@
 
 
 # Import Splinter, BeautifulSoup, and Pandas
+from tkinter import BROWSE
 from splinter import Browser
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 from webdriver_manager.chrome import ChromeDriverManager
 import datetime as dt
+import time
 
 
 def scrape_all():
@@ -23,7 +25,8 @@ def scrape_all():
    "news_paragraph":news_paragraph,
    "featured_image": featured_image(browser),
    "facts":mars_facts(),
-   "last_modified":dt.datetime.now()
+   "last_modified":dt.datetime.now(),
+   "hemispheres":hemisphere_images(browser)
  }
 
  # Stop webdriver and return data
@@ -98,21 +101,31 @@ def mars_facts():
 
  df.columns=['Description', 'Mars', 'Earth']
  df.set_index('Description', inplace=True)
- return df.to_html()
+ return df.to_html(classes="dataframe table")
 
+
+def hemisphere_images(browser):
+  url = 'https://marshemispheres.com/'
+  browser.visit(url)
+  html = browser.html
+  hemisphere_image_urls = []
+  new_soup = bs(html,'html.parser')
+  for i in range(0, len(new_soup.find_all('div', class_='item'))):
+    browser.find_by_tag('h3')[i].click()
+    time.sleep(2)
+    html = browser.html
+    image_soup = bs(html,'html.parser')
+    hemisphere = {}
+    relative_link = image_soup.find('img', class_= 'wide-image').get('src') 
+    hemisphere['image_urls'] = f'https://astrogeology.usgs.gov/cache/{relative_link}'
+    hemisphere['image_titles'] = image_soup.find('h2', class_= 'title').text
+    hemisphere_image_urls.append(hemisphere)
+    browser.back()
+
+  return hemisphere_image_urls
 
 if __name__ == "__main__":
   #if running as script, print scraped data
   print(scrape_all())
-
-
-
-
-
-
-
-
-
-
 
 
